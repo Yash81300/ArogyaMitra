@@ -1,9 +1,11 @@
 # ─── Auth Router ───────────────────────────────────────────────────────────
 # Handles user registration, login, JWT token issuance and validation,
-# profile photo uploads, and the Google Calendar OAuth callback proxy.
+# profile photo uploads (via Cloudinary), and the Google Calendar OAuth callback proxy.
 #
 # All other routers import `get_current_user` from here to protect endpoints.
 
+import cloudinary
+import cloudinary.uploader
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -21,18 +23,15 @@ from app.models.user import User, FitnessGoal, WorkoutPreference, DietPreference
 from app.utils.config import settings
 
 
-# ─── Upload Configuration ──────────────────────────────────────────────────
+# ─── Cloudinary Configuration ──────────────────────────────────────────────
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 
-UPLOAD_DIR = "static/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-MIME_TO_EXT = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-}
-ALLOWED_TYPES = set(MIME_TO_EXT.keys())
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE_MB = 5
 
 
@@ -109,7 +108,6 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     bio: Optional[str] = None
 
-    # Same bounds as UserRegister to prevent corrupt BMR/BMI via profile edits
     @validator("age")
     def age_bounds(cls, v):
         if v is not None and not (5 <= v <= 120):
@@ -260,7 +258,7 @@ async def upload_photo(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Upload or replace the current user's profile photo (max 5 MB)."""
+    """Upload or replace the current user's profile photo via Cloudinary."""
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, or GIF images are allowed")
 
@@ -268,19 +266,30 @@ async def upload_photo(
     if len(contents) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(status_code=400, detail=f"Image must be under {MAX_SIZE_MB}MB")
 
-    # Delete old photo if one exists
-    if current_user.profile_photo_url:
-        old_path = current_user.profile_photo_url.lstrip("/")
-        if os.path.exists(old_path):
-            os.remove(old_path)
+    # Delete old photo from Cloudinary if one exists
+    if current_user.profile_photo_url and "cloudinary.com" in current_user.profile_photo_url:
+        try:
+            # Extract public_id from the URL (last part before extension)
+            public_id = current_user.profile_photo_url.split("/")[-1].rsplit(".", 1)[0]
+            cloudinary.uploader.destroy(f"arogyamitra/profiles/{public_id}")
+        except Exception:
+            pass  # Don't block upload if deletion fails
 
-    ext = MIME_TO_EXT[file.content_type]
-    filename = f"{current_user.id}_{uuid.uuid4().hex}.{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    with open(filepath, "wb") as f:
-        f.write(contents)
+    # Upload new photo to Cloudinary
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="arogyamitra/profiles",
+            public_id=f"user_{current_user.id}",
+            overwrite=True,
+            resource_type="image",
+            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}]
+        )
+        photo_url = result["secure_url"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload photo: {str(e)}")
 
-    current_user.profile_photo_url = f"/static/uploads/{filename}"
+    current_user.profile_photo_url = photo_url
     db.commit()
     db.refresh(current_user)
     return user_to_dict(current_user)
@@ -288,11 +297,14 @@ async def upload_photo(
 
 @router.delete("/photo")
 def delete_photo(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Remove the current user's profile photo from disk and the database."""
+    """Remove the current user's profile photo from Cloudinary and the database."""
     if current_user.profile_photo_url:
-        old_path = current_user.profile_photo_url.lstrip("/")
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        if "cloudinary.com" in current_user.profile_photo_url:
+            try:
+                public_id = f"arogyamitra/profiles/user_{current_user.id}"
+                cloudinary.uploader.destroy(public_id)
+            except Exception:
+                pass  # Don't block deletion if Cloudinary call fails
         current_user.profile_photo_url = None
         db.commit()
     return user_to_dict(current_user)
