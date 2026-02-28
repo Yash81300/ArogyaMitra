@@ -24,7 +24,6 @@ export default function Dashboard() {
   const { user, refreshUser, lastRefresh } = useAuthStore()
   const [aromiOpen, setAromiOpen] = useState(false)
 
-  // BUG 7 FIX: include actual dependencies so the effect never closes over stale refs
   useEffect(() => {
     const STALE_MS = 5 * 60 * 1000
     if (!lastRefresh || Date.now() - lastRefresh > STALE_MS) refreshUser()
@@ -157,7 +156,6 @@ export default function Dashboard() {
             {/* Today's Workout Preview */}
             {currentWorkout?.plan && (() => {
               const days = currentWorkout.plan?.days || []
-              // 0=Sun,1=Mon,...6=Sat → map to day index (cycle if plan < 7 days)
               const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
               const todaysDay = days[todayIdx % days.length]
               return todaysDay ? (
@@ -187,14 +185,12 @@ export default function Dashboard() {
             {currentNutrition?.meals && (() => {
               const hour = new Date().getHours()
 
-              // Which meal type is "current" based on time of day
               const currentMealType =
                 hour >= 5  && hour < 10 ? 'breakfast' :
                 hour >= 10 && hour < 14 ? 'lunch' :
                 hour >= 14 && hour < 18 ? 'snack' :
                 hour >= 18 && hour < 22 ? 'dinner' : 'breakfast'
 
-              // Ordered priority: current meal first, then the rest in natural order
               const mealOrder = ['breakfast', 'lunch', 'snack', 'dinner']
               const orderedTypes = [
                 currentMealType,
@@ -207,7 +203,6 @@ export default function Dashboard() {
                 return dayNum === todayIdx % 7
               })
 
-              // Only show the current meal
               const sortedMeals = todayMeals.filter((m: any) => m.meal_type === currentMealType)
 
               return sortedMeals.length > 0 ? (
@@ -235,7 +230,7 @@ export default function Dashboard() {
                           transition={{ delay: 0.65 + i * 0.06 }}
                           className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-4">
                             <motion.span
                               animate={{ scale: [1, 1.3, 1] }}
                               transition={{ duration: 1.5, repeat: Infinity }}
