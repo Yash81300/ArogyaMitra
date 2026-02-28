@@ -1,0 +1,48 @@
+🏋️ AROGYAMITRA - AI FITNESS PLATFORM
+======================================
+Created by: Srinivas
+Mission: Transforming Lives Through AI-Powered Fitness
+
+QUICK START
+-----------
+1. Run setup:
+   Linux/Mac: bash SETUP.sh
+   Windows:   SETUP.bat
+
+2. Add API keys to backend/.env:
+   - GROQ_API_KEY      → https://console.groq.com/keys
+   - YOUTUBE_API_KEY   → https://console.cloud.google.com/apis/credentials
+   - SPOONACULAR_KEY   → https://spoonacular.com/food-api/console#Profile
+   - GOOGLE_CALENDAR_* → https://console.cloud.google.com/apis/credentials
+
+3. Start backend:
+   cd backend
+   source venv/bin/activate  (or venv\Scripts\activate on Windows)
+   python main.py
+
+4. Start frontend (new terminal):
+   cd frontend
+   npm run dev
+
+5. Open http://localhost:3001
+
+URLS
+----
+Frontend:  http://localhost:3001
+Backend:   http://localhost:8000
+API Docs:  http://localhost:8000/docs (Swagger UI)
+
+FEATURES
+--------
+✅ JWT Authentication (register/login)
+✅ AI Workout Plan Generation (Groq LLaMA-3.3-70B)
+✅ AI Nutrition Planning (7-day meal plans)
+✅ Health Assessment (12-question form + AI analysis)
+✅ Progress Tracking (charts & history)
+✅ AROMI AI Coach (floating chat assistant)
+✅ YouTube Exercise Videos
+✅ Spoonacular Recipe Integration
+✅ Google Calendar Sync
+✅ Charity Impact Tracker
+✅ Streak Points System
+✅ Responsive Dark UI (Tailwind CSS)
