@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # ── Google Services ────────────────────────────────────────────────────
     GOOGLE_CALENDAR_CLIENT_ID: str = ""
     GOOGLE_CALENDAR_CLIENT_SECRET: str = ""
-    GOOGLE_CALENDAR_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
+    GOOGLE_CALENDAR_REDIRECT_URI: str = "https://arogyamitra.up.railway.app/api/auth/google/callback"
     YOUTUBE_API_KEY: str = ""    # Optional — for exercise/recipe video search
 
     # ── Nutrition ──────────────────────────────────────────────────────────
