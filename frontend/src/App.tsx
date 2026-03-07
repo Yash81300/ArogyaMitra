@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './stores/authStore'
-import { useEffect, useState } from 'react'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -22,23 +21,12 @@ const queryClient = new QueryClient({
 })
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, token } = useAuthStore()
-  const [isHydrated, setIsHydrated] = useState(false)
+  const { isAuthenticated, token, _hasHydrated } = useAuthStore()
 
-  useEffect(() => {
-    // Zustand persist middleware rehydrates from localStorage
-    // Wait a tick to ensure hydration is complete
-    const timeout = setTimeout(() => {
-      setIsHydrated(true)
-    }, 0)
-
-    return () => {
-      clearTimeout(timeout)
-    }
-  }, [])
-
-  // Wait for hydration to complete before rendering protected content
-  if (!isHydrated) {
+  // Wait for Zustand to finish rehydrating from localStorage before making
+  // any auth decisions. Without this, the initial state is always
+  // { isAuthenticated: false } and would redirect every fresh-load to /login.
+  if (!_hasHydrated) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-white text-center">
@@ -49,7 +37,6 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // If not authenticated after hydration, redirect to login
   if (!isAuthenticated || !token) {
     return <Navigate to="/login" replace />
   }
