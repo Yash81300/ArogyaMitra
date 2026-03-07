@@ -5,8 +5,8 @@ import json
 import os
 from datetime import datetime, timedelta
 
-# Required for OAuth over plain HTTP on localhost
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+if os.environ.get("ENVIRONMENT") == "development":
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
@@ -23,8 +23,7 @@ from app.utils.config import settings
 router = APIRouter()
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
-FRONTEND_URL = "http://localhost:3001"
-
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3001")
 
 def _make_flow():
     return Flow.from_client_config(
