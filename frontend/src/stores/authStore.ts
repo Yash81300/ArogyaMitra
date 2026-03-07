@@ -47,13 +47,15 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   lastRefresh: number | null   // Unix timestamp of last /auth/me refresh
+  _hasHydrated: boolean        // true once persist middleware has rehydrated from localStorage
 
   // ── Actions ───────────────────────────────────────────────────────────────
-  setUser:     (user: User) => void
-  setToken:    (token: string) => void
-  logout:      () => void
-  refreshUser: () => Promise<void>
-  updateUser:  (data: Partial<User>) => void
+  setUser:        (user: User) => void
+  setToken:       (token: string) => void
+  logout:         () => void
+  refreshUser:    () => Promise<void>
+  updateUser:     (data: Partial<User>) => void
+  setHasHydrated: (state: boolean) => void
 }
 
 
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       lastRefresh: null,
+      _hasHydrated: false,
 
       setUser: (user) => set({ user, isAuthenticated: true }),
 
@@ -94,6 +97,8 @@ export const useAuthStore = create<AuthState>()(
           set({ user: { ...current, ...data } })
         }
       },
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'auth-storage',
@@ -104,6 +109,11 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
         lastRefresh: state.lastRefresh,
       }),
+      // Fires once localStorage has been read and state has been rehydrated.
+      // This is the reliable signal that it's safe to check isAuthenticated.
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )
