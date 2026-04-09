@@ -73,10 +73,7 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user, isAuthenticated: true }),
 
       setToken: (token) => {
-        // Zustand persist writes to localStorage automatically — no need to
-        // call localStorage.setItem manually (which would create a second,
-        // out-of-sync copy of the token).
-        set({ token })
+        set({ token, isAuthenticated: true, lastRefresh: Date.now() })
       },
 
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
