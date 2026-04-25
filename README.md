@@ -1,7 +1,7 @@
 # 🏋️ ArogyaMitra — AI-Powered Fitness Platform
 
 > **Transforming Lives Through AI-Powered Fitness**  
-> Created by Srinivas | Mission: Making personalised fitness accessible to everyone
+> Created by Yash Malik | Mission: Making personalised fitness accessible to everyone
 
 ---
 
